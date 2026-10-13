@@ -55,3 +55,4 @@ stages:
                 cd terraform
                 terraform init -input=false
                 terraform validate
+                terraform plan -input=false
