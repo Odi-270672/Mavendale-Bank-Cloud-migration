@@ -43,3 +43,9 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 az account show --query "{name:name, id:id}" -o table
+                az storage blob list \
+                  --account-name stmavendaletfstateuks01 \
+                  --container-name tfstate \
+                  --auth-mode login \
+                  --query "[].name" \
+                  -o table
