@@ -24,3 +24,6 @@ stages:
         steps:
           - script: echo "Mavendale Bank Terraform pipeline initialised"
             displayName: 'Verify pipeline execution'
+            
+          - script: terraform version
+            displayName: 'Check Terraform version'
