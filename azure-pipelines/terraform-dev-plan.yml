@@ -34,3 +34,12 @@ stages:
             
           - script: terraform version
             displayName: 'Check Terraform version'
+
+          - task: AzureCLI@2
+            displayName: 'Verify Azure authentication'
+            inputs:
+              azureSubscription: 'sc-mavendale-terraform-dev-uks'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az account show --query "{name:name, id:id}" -o table
