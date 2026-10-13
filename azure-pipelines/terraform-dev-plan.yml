@@ -24,6 +24,13 @@ stages:
         steps:
           - script: echo "Mavendale Bank Terraform pipeline initialised"
             displayName: 'Verify pipeline execution'
+
+          - bash: |
+              set -e
+              curl -fsSLo terraform.zip https://releases.hashicorp.com/terraform/1.14.4/terraform_1.14.4_linux_amd64.zip
+              unzip -o terraform.zip
+              sudo install terraform /usr/local/bin/terraform
+            displayName: 'Install Terraform 1.14.4'
             
           - script: terraform version
             displayName: 'Check Terraform version'
