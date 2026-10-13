@@ -14,3 +14,13 @@ trigger:
 
 pool:
   vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Validate
+    displayName: 'Validate Mavendale Pipeline'
+    jobs:
+      - job: TestPipeline
+        displayName: 'Test pipeline execution'
+        steps:
+          - script: echo "Mavendale Bank Terraform pipeline initialised"
+            displayName: 'Verify pipeline execution'
