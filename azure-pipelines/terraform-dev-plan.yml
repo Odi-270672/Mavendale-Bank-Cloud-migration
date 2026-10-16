@@ -53,6 +53,7 @@ stages:
                 export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
 
                 cd terraform
+                pwd
                 terraform fmt -check -recursive
                 terraform init -input=false
                 terraform validate
