@@ -1,5 +1,5 @@
 resource "azurerm_virtual_network" "mavendale_vnet" {
-  name          = "vnet-mavendale-dev-uks"
+  name="vnet-mavendale-dev-uks"
   address_space = ["10.10.0.0/16"]
 
   location            = azurerm_resource_group.mavendale_dev.location
