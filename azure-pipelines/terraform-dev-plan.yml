@@ -57,4 +57,5 @@ stages:
                 terraform fmt -check -recursive
                 terraform init -input=false
                 terraform validate
+                export TF_VAR_web_vm_ssh_public_key="$(cat ../azure-pipelines/mavendale_azure_vm.pub)"
                 terraform plan -input=false
