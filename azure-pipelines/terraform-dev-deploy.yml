@@ -1,0 +1,108 @@
+# Mavendale Bank - Terraform Development Deployment Pipeline
+# Manual execution only. Deployments restricted to main.
+
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformVersion: '1.14.4'
+  azureServiceConnection: 'sc-mavendale-terraform-dev-uks'
+
+stages:
+- stage: Plan
+  displayName: 'Terraform Plan'
+  jobs:
+  - job: TerraformPlan
+    displayName: 'Generate and publish Terraform plan'
+    steps:
+    - checkout: self
+
+    - bash: |
+        set -e
+        curl -fsSLo /tmp/terraform.zip \
+          https://releases.hashicorp.com/terraform/$(terraformVersion)/terraform_$(terraformVersion)_linux_amd64.zip
+        unzip -o /tmp/terraform.zip -d /tmp
+        sudo install /tmp/terraform /usr/local/bin/terraform
+      displayName: 'Install Terraform'
+
+    - task: AzureCLI@2
+      displayName: 'Terraform init, validate and plan'
+      inputs:
+        azureSubscription: '$(azureServiceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        addSpnToEnvironment: true
+        inlineScript: |
+          set -euo pipefail
+
+          export ARM_USE_OIDC=true
+          export ARM_USE_AZUREAD=true
+          export ARM_CLIENT_ID="$servicePrincipalId"
+          export ARM_TENANT_ID="$tenantId"
+          export ARM_OIDC_TOKEN="$idToken"
+          export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+
+          export TF_VAR_web_vm_ssh_public_key="$(cat azure-pipelines/mavendale_azure_vm.pub)"
+
+          cd terraform
+          terraform fmt -check -recursive
+          terraform init -input=false
+          terraform validate
+          terraform plan -input=false -out="$(Build.ArtifactStagingDirectory)/mavendale-dev.tfplan"
+
+    - publish: '$(Build.ArtifactStagingDirectory)/mavendale-dev.tfplan'
+      artifact: terraform-plan
+      displayName: 'Publish saved Terraform plan'
+
+- stage: Deploy
+  displayName: 'Terraform Deployment'
+  dependsOn: Plan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: TerraformApply
+    displayName: 'Apply approved Terraform plan'
+    environment: 'mavendale-dev'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - download: current
+            artifact: terraform-plan
+
+          - bash: |
+              set -e
+              curl -fsSLo /tmp/terraform.zip \
+                https://releases.hashicorp.com/terraform/$(terraformVersion)/terraform_$(terraformVersion)_linux_amd64.zip
+              unzip -o /tmp/terraform.zip -d /tmp
+              sudo install /tmp/terraform /usr/local/bin/terraform
+            displayName: 'Install Terraform'
+
+          - task: AzureCLI@2
+            displayName: 'Terraform apply saved plan'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -euo pipefail
+
+                export ARM_USE_OIDC=true
+                export ARM_USE_AZUREAD=true
+                export ARM_CLIENT_ID="$servicePrincipalId"
+                export ARM_TENANT_ID="$tenantId"
+                export ARM_OIDC_TOKEN="$idToken"
+                export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+
+                export TF_VAR_web_vm_ssh_public_key="$(cat azure-pipelines/mavendale_azure_vm.pub)"
+
+                cd terraform
+                terraform init -input=false
+
+                terraform apply -input=false \
+                  "$(Pipeline.Workspace)/terraform-plan/mavendale-dev.tfplan"
