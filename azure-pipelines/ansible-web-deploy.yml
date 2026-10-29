@@ -1,0 +1,134 @@
+
+# Mavendale Bank - Ansible Web Tier Deployment Pipeline
+# Manual execution only
+
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: vg-mavendale-ansible-dev
+
+  - name: resourceGroup
+    value: 'rg-mavendale-dev-uks'
+
+  - name: nsgName
+    value: 'nsg-mavendale-web-dev-uks'
+
+  - name: vmName
+    value: 'vm-mavendale-web-dev-uks'
+
+steps:
+  - task: DownloadSecureFile@1
+    name: sshPrivateKey
+    displayName: 'Download Ansible SSH Private Key'
+    inputs:
+      secureFile: 'mavendale_azure_vm'
+
+  - bash: |
+      set -euo pipefail
+      sudo apt-get update -qq
+      sudo apt-get install -y ansible
+    displayName: 'Install Ansible'
+
+  - bash: |
+      set -euo pipefail
+
+      eval "$(ssh-agent -s)" > /dev/null
+      chmod 600 "$(sshPrivateKey.secureFilePath)"
+
+      printf '%s\n' '#!/bin/sh' 'printf "%s\n" "$SSH_KEY_PASSPHRASE"' > "$AGENT_TEMPDIRECTORY/ssh-askpass.sh"
+      chmod 700 "$AGENT_TEMPDIRECTORY/ssh-askpass.sh"
+
+      DISPLAY=:0 \
+      SSH_ASKPASS="$AGENT_TEMPDIRECTORY/ssh-askpass.sh" \
+      SSH_ASKPASS_REQUIRE=force \
+        ssh-add "$(sshPrivateKey.secureFilePath)" < /dev/null
+
+      echo "##vso[task.setvariable variable=SSH_AUTH_SOCK]$SSH_AUTH_SOCK"
+      rm -f "$AGENT_TEMPDIRECTORY/ssh-askpass.sh"
+      echo 'SSH key loaded successfully.'
+    displayName: 'Configure SSH Authentication'
+    env:
+      SSH_KEY_PASSPHRASE: $(sshKeyPassphrase)
+
+  - task: AzureCLI@2
+    displayName: 'Allow Pipeline Agent SSH Access'
+    inputs:
+      azureSubscription: 'sc-mavendale-terraform-dev-uks'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        set -euo pipefail
+
+        AGENT_IP=$(curl -fsS -4 https://api.ipify.org)
+
+        VM_PUBLIC_IP=$(az vm show \
+          -g "$(resourceGroup)" \
+          -n "$(vmName)" \
+          -d \
+          --query publicIps -o tsv)
+
+        if [[ -z "$VM_PUBLIC_IP" ]]; then
+          echo 'VM has no Public IP attached.' >&2
+          exit 1
+        fi
+
+        echo "##vso[task.setvariable variable=VM_PUBLIC_IP]$VM_PUBLIC_IP"
+
+        az network nsg rule create \
+          --resource-group "$(resourceGroup)" \
+          --nsg-name "$(nsgName)" \
+          --name Allow-Ansible-Pipeline-SSH \
+          --priority 130 \
+          --direction Inbound \
+          --access Allow \
+          --protocol Tcp \
+          --source-address-prefixes "$AGENT_IP/32" \
+          --destination-address-prefixes 10.10.1.4/32 \
+          --destination-port-ranges 22 \
+          --output none
+
+        echo 'Temporary SSH rule created.'
+
+  - bash: |
+      set -euo pipefail
+
+      ansible-playbook \
+        -i ansible/inventory/hosts.ini \
+        ansible/playbooks/configure-web.yml \
+        -u azureadmin \
+        -e "ansible_host=$VM_PUBLIC_IP" \
+        --ssh-common-args="-o StrictHostKeyChecking=accept-new"
+    displayName: 'Deploy Mavendale Bank Web Tier'
+    env:
+      VM_PUBLIC_IP: $(VM_PUBLIC_IP)
+      SSH_AUTH_SOCK: $(SSH_AUTH_SOCK)
+
+  - task: AzureCLI@2
+    displayName: 'Remove Temporary Pipeline SSH Access'
+    condition: always()
+    inputs:
+      azureSubscription: 'sc-mavendale-terraform-dev-uks'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        set -euo pipefail
+
+        if az network nsg rule show \
+          --resource-group "$(resourceGroup)" \
+          --nsg-name "$(nsgName)" \
+          --name Allow-Ansible-Pipeline-SSH \
+          --output none 2>/dev/null; then
+
+          az network nsg rule delete \
+            --resource-group "$(resourceGroup)" \
+            --nsg-name "$(nsgName)" \
+            --name Allow-Ansible-Pipeline-SSH
+
+          echo 'Temporary SSH rule removed.'
+        else
+          echo 'No temporary SSH rule to remove.'
+        fi
