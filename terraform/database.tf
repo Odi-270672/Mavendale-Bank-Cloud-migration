@@ -57,7 +57,7 @@ resource "azurerm_private_endpoint" "mavendale_sql_pe" {
   # mapping the SQL Server's private hostname to its Private Endpoint IP.
 
   private_dns_zone_group {
-    name                 = "sql-private-dns-zone-group"
+    name = "sql-private-dns-zone-group"
     private_dns_zone_ids = [
       azurerm_private_dns_zone.mavendale_sql_dns.id
     ]
