@@ -1,0 +1,15 @@
+[Unit]
+Description=Mavendale Bank Banking API
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/mavendale/banking-api/venv/bin/python /opt/mavendale/banking-api/app.py
+WorkingDirectory=/opt/mavendale/banking-api
+Restart=on-failure
+RestartSec=5
+User=azureadmin
+EnvironmentFile=/etc/mavendale/banking-api.env
+ 
+[Install]
+WantedBy=multi-user.target
