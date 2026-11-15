@@ -1,11 +1,11 @@
-# Creates an Azure SQL Logical Server in UK West.
+# Creates an Azure SQL Logical Server in UK South.
 # WHY: Provides the logical host for our Mavendale SQL Database.
 # The server manages database connections and authentication.
 # It is NOT a physical server or Azure VM.
 
 resource "azurerm_mssql_server" "mavendale_sql_server" {
-  name                         = "sql-mavendale-dev-ukw"
-  location                     = "ukwest"
+  name                         = "sql-mavendale-dev-uks"
+  location                     = "uksouth"
   resource_group_name          = azurerm_resource_group.mavendale_dev.name
   version                      = "12.0"
   administrator_login          = "mavendaleadmin"
@@ -19,7 +19,7 @@ resource "azurerm_mssql_server" "mavendale_sql_server" {
 # Basic is the selected low-cost database service tier.
 
 resource "azurerm_mssql_database" "mavendale_database" {
-  name      = "sqldb-mavendale-dev-ukw"
+  name      = "sqldb-mavendale-dev-uks"
   server_id = azurerm_mssql_server.mavendale_sql_server.id
   sku_name  = "Basic"
 }
@@ -30,7 +30,7 @@ resource "azurerm_mssql_database" "mavendale_database" {
 # through a private IP address instead of its public endpoint.
 #
 # The Private Endpoint is placed in our DB subnet in UK South,
-# even though the Azure SQL service itself is hosted in UK West.
+# and the Azure SQL service itself is also hosted in UK South.
 
 resource "azurerm_private_endpoint" "mavendale_sql_pe" {
   name                = "pe-mavendale-sql-dev-uks"
@@ -71,7 +71,7 @@ resource "azurerm_private_endpoint" "mavendale_sql_pe" {
 #
 # Example (illustrative):
 # sql-mavendale-dev-ukw.privatelink.database.windows.net
-#     -> 10.10.3.5
+#     -> 10.10.3.4
 
 resource "azurerm_private_dns_zone" "mavendale_sql_dns" {
   name                = "privatelink.database.windows.net"

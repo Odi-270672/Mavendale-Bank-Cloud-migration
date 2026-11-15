@@ -3,6 +3,9 @@
   hosts: app
   become: true
 
+  vars_files:
+    - ../vars/secrets.yml
+
   tasks: 
      - name: Install Python3
        ansible.builtin.apt:
@@ -40,6 +43,23 @@
          owner: root
          group: root
          mode: '0644'
+
+     - name: Create Banking API configuration directory
+       ansible.builtin.file:
+         path: /etc/mavendale
+         state: directory
+         owner: root
+         group: root
+         mode: '0755'
+
+     - name: Deploy Banking API SQL environment configuration
+       ansible.builtin.template:
+         src: ../templates/banking-api.env.j2
+         dest: /etc/mavendale/banking-api.env
+         owner: azureadmin
+         group: azureadmin
+         mode: '0600'
+       no_log: true
 
      - name: Deploy Banking API systemd Service 
        ansible.builtin.template:
