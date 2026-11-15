@@ -1,7 +1,6 @@
 resource "azurerm_virtual_network" "mavendale_vnet" {
-  name          = "vnet-mavendale-dev-uks"
-  address_space = ["10.10.0.0/16"]
-
+  name                = "vnet-mavendale-dev-uks"
+  address_space       = ["10.10.0.0/16"]
   location            = azurerm_resource_group.mavendale_dev.location
   resource_group_name = azurerm_resource_group.mavendale_dev.name
 
@@ -39,4 +38,11 @@ resource "azurerm_subnet" "management" {
   resource_group_name  = azurerm_resource_group.mavendale_dev.name
   virtual_network_name = azurerm_virtual_network.mavendale_vnet.name
   address_prefixes     = ["10.10.4.0/24"]
+}
+
+resource "azurerm_subnet" "aks" {
+  name                 = "snet-mavendale-aks-dev-uks"
+  resource_group_name  = azurerm_resource_group.mavendale_dev.name
+  virtual_network_name = azurerm_virtual_network.mavendale_vnet.name
+  address_prefixes     = ["10.10.5.0/24"]
 }

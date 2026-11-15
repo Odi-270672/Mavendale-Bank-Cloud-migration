@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mavendale-banking-api
+  labels:
+    app: mavendale-banking-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mavendale-banking-api
+  template:
+    metadata:
+      labels:
+        app: mavendale-banking-api
+    spec:
+      containers:
+        - name: mavendale-banking-api
+          image: acrmavendaledevuks.azurecr.io/mavendale-banking-api:v1
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: mavendale-sql-secret
