@@ -27,10 +27,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     vm_size        = "Standard_DS2_v2"
     vnet_subnet_id = azurerm_subnet.aks.id
     upgrade_settings {
-        max_surge                     = "10%"
-        drain_timeout_in_minutes      = 0
-        node_soak_duration_in_minutes = 0
-        }
+      max_surge                     = "10%"
+      drain_timeout_in_minutes      = 0
+      node_soak_duration_in_minutes = 0
+    }
   }
   # And this block within your AKS cluster resource assigns the above User-Assigned Managed Identity to AKS:
 
