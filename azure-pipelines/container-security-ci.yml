@@ -22,4 +22,4 @@ steps:
           --scanners vuln \
           --severity HIGH,CRITICAL \
           --exit-code 1 \
-          acrmavendaledevuks.azurecr.io/mavendale-banking-api:v1
+          acrmavendaledevuks.azurecr.io/mavendale-banking-api:v2
