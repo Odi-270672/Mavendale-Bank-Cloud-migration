@@ -1,0 +1,25 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: AzureCLI@2
+    displayName: Scan Banking API image with Trivy
+    inputs:
+      azureSubscription: sc-mavendale-terraform-dev-uks
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -e
+
+        az acr login --name acrmavendaledevuks
+
+        docker run --rm \
+          -v "$HOME/.docker:/root/.docker:ro" \
+          aquasec/trivy:0.76.2 image \
+          --scanners vuln \
+          --severity HIGH,CRITICAL \
+          --exit-code 1 \
+          acrmavendaledevuks.azurecr.io/mavendale-banking-api:v1
