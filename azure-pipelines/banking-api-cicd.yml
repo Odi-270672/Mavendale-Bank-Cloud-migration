@@ -1,0 +1,48 @@
+# Mavendale Bank - Banking API CI/CD Pipeline
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - kubernetes/**
+      - application/banking-api/**
+      - azure-pipelines/banking-api-cicd.yml
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+    - stage: Build
+      jobs:
+      - job: BuildImage 
+        steps:
+        - task: Docker@2
+          displayName: 'Build and Push Docker Image'
+          inputs:
+            containerRegistry: 'sc-mavendale-acr-dev-uks'
+            repository: 'mavendale-banking-api'
+            command: 'buildAndPush'
+            Dockerfile: '$(Build.SourcesDirectory)/application/banking-api/Dockerfile'
+            buildContext: '$(Build.SourcesDirectory)/application/banking-api'
+            tags: |
+              $(Build.BuildId)
+  
+    - stage: Deploy
+      jobs:
+      - job: DeployToAKS
+        steps:     
+        - task: KubernetesManifest@1
+          displayName: 'Deploy to AKS'
+          
+          inputs:
+            connectionType: 'azureResourceManager'
+            azureSubscriptionConnection: 'sc-mavendale-terraform-dev-uks'
+            azureResourceGroup: 'rg-mavendale-dev-uks'
+            kubernetesCluster: 'aks-mavendale-dev-uks'
+            namespace: 'default'
+            action: 'deploy'
+            manifests: '$(Build.SourcesDirectory)/kubernetes/deployment.yaml'
+            containers: 'acrmavendaledevuks.azurecr.io/mavendale-banking-api:$(Build.BuildId)'
+  
