@@ -8,8 +8,11 @@ A hands-on portfolio project simulating the migration of a fictional bank's on-p
 
 **Azure (TO-BE):** Azure VNet with segmented Web, App, DB and Management subnets, alongside Azure VMs, AKS, ACR and Azure SQL.
 
-- [On-Premises Architecture](docs/Mavendale-Bank-AS-IS-Architecture.drawio.xml)
-- [Azure Architecture](docs/Mavendale-Bank-Azure-Architecture.drawio.xml)
+### On-Premises Architecture (AS-IS)
+![On-Premises Architecture](docs/Mavendale-Bank-AS-IS-Architecture.drawio.png)
+
+### Azure Architecture (TO-BE)
+![Azure Architecture](docs/Mavendale-Bank-Azure-Architecture.drawio.png)
 
 ## Technologies
 - **Cloud:** Microsoft Azure
