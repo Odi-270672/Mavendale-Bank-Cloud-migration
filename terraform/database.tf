@@ -4,12 +4,13 @@
 # It is NOT a physical server or Azure VM.
 
 resource "azurerm_mssql_server" "mavendale_sql_server" {
-  name                         = "sql-mavendale-dev-uks"
-  location                     = "uksouth"
-  resource_group_name          = azurerm_resource_group.mavendale_dev.name
-  version                      = "12.0"
-  administrator_login          = "mavendaleadmin"
-  administrator_login_password = var.sql_admin_password
+  name                          = "sql-mavendale-dev-uks"
+  location                      = "uksouth"
+  resource_group_name           = azurerm_resource_group.mavendale_dev.name
+  version                       = "12.0"
+  administrator_login           = "mavendaleadmin"
+  administrator_login_password  = var.sql_admin_password
+  public_network_access_enabled = false
 }
 
 
